@@ -63,3 +63,6 @@ Este projeto é uma análise didática com dados simulados. Não substitui parec
 ## Contexto
 
 Entrega da Rota 4 do Challenge ONE AI for Business (G11), Taranis Black. Os entregáveis completos incluem o Resumo Executivo, a Rota 0 (AI Canvas, priorização e governança), o diagnóstico SIPOC e Ishikawa e este dashboard.
+
+## Imagens Anexo
+<img src="Captura de tela 2026-11-07 123404.png" alt="Dashborad" />
