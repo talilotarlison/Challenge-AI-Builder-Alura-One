@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Taranis Black | Dashboard Financeiro Rota 4</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #f5f6f8; --card: #ffffff; --text: #1d2330; --muted: #6b7280;
+    --line: #e5e7eb; --ok: #15803d; --bad: #b91c1c; --warn: #b45309;
+    --accent: #1e3a5f; --accent2: #7c9cc4;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+         background: var(--bg); color: var(--text); line-height: 1.5; }
+  header { background: var(--accent); color: #fff; padding: 28px 32px; }
+  header h1 { margin: 0 0 4px; font-size: 22px; }
+  header p { margin: 0; opacity: .85; font-size: 14px; }
+  main { max-width: 1180px; margin: 0 auto; padding: 24px 16px 48px; }
+  h2 { font-size: 18px; margin: 32px 0 12px; color: var(--accent); }
+  .grid-kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+  .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+  .kpi .label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .kpi .value { font-size: 24px; font-weight: 700; margin: 4px 0; }
+  .kpi .delta { font-size: 13px; font-weight: 600; }
+  .bad { color: var(--bad); } .ok { color: var(--ok); } .warn { color: var(--warn); }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 800px) { .grid-2 { grid-template-columns: 1fr; } }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 18px; }
+  .card h3 { margin: 0 0 10px; font-size: 15px; }
+  .chart-box { position: relative; height: 290px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--card); }
+  th, td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  th { background: #eef2f7; font-weight: 600; color: var(--accent); }
+  td.neg { color: var(--bad); } td.pos { color: var(--ok); }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; }
+  .anom { background: var(--card); border-left: 4px solid var(--bad); border-radius: 6px;
+          padding: 12px 16px; margin-bottom: 10px; }
+  .anom.mid { border-left-color: var(--warn); }
+  .anom.info { border-left-color: var(--accent2); }
+  .anom strong { display: block; margin-bottom: 2px; }
+  .anom p { margin: 0; font-size: 14px; color: #374151; }
+  .scen { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+  .scen .kpi .value { font-size: 22px; }
+  .note { font-size: 12px; color: var(--muted); margin-top: 8px; }
+  ul.premissas { margin: 8px 0 0 18px; padding: 0; font-size: 14px; }
+  ul.premissas li { margin-bottom: 4px; }
+  footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 40px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Taranis Black: Dashboard Financeiro e Projeção (Rota 4)</h1>
+  <p>Orçado vs. realizado, anomalias de custo e projeção do próximo trimestre. Fonte: 05_Financas_Orcado_vs_Realizado.xlsx. Valores em R$ milhões.</p>
+</header>
+
+<main>
+
+<h2>1. Indicadores do ano</h2>
+<div class="grid-kpi">
+  <div class="kpi"><div class="label">Receita líquida</div><div class="value">39,0</div>
+    <div class="delta bad">-1,9% vs. orçado (39,8)</div></div>
+  <div class="kpi"><div class="label">EBITDA</div><div class="value">5,8</div>
+    <div class="delta bad">-41,4% vs. orçado (9,8)</div></div>
+  <div class="kpi"><div class="label">Margem bruta</div><div class="value">47,2%</div>
+    <div class="delta bad">-2,3 p.p. vs. orçado (49,5%)</div></div>
+  <div class="kpi"><div class="label">Lucro líquido</div><div class="value">3,1</div>
+    <div class="delta bad">-47,9% vs. orçado (6,0)</div></div>
+  <div class="kpi"><div class="label">Custos extras mapeados</div><div class="value">4,1</div>
+    <div class="delta bad">fretes, reentregas, PDD e cancelamentos</div></div>
+</div>
+
+<h2>2. Evolução trimestral</h2>
+<div class="grid-2">
+  <div class="card">
+    <h3>Receita líquida: orçado vs. realizado</h3>
+    <div class="chart-box"><canvas id="chReceita"></canvas></div>
+  </div>
+  <div class="card">
+    <h3>EBITDA: orçado vs. realizado</h3>
+    <div class="chart-box"><canvas id="chEbitda"></canvas></div>
+  </div>
+  <div class="card">
+    <h3>Custos extras por trimestre (realizado)</h3>
+    <div class="chart-box"><canvas id="chCustos"></canvas></div>
+  </div>
+  <div class="card">
+    <h3>Margens sobre receita líquida (realizado)</h3>
+    <div class="chart-box"><canvas id="chMargem"></canvas></div>
+  </div>
+</div>
+
+<h2>3. DRE trimestral: orçado vs. realizado</h2>
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th>Linha (R$ mil)</th><th>T1 Orç.</th><th>T1 Real</th><th>T2 Orç.</th><th>T2 Real</th>
+        <th>T3 Orç.</th><th>T3 Real</th><th>T4 Orç.</th><th>T4 Real</th><th>Ano Orç.</th><th>Ano Real</th><th>Var. ano</th></tr>
+  </thead>
+  <tbody id="dreBody"></tbody>
+</table>
+</div>
+<p class="note">Variação negativa em custos indica estouro. Valores originais da aba DRE_Trimestral_Orcado_Real.</p>
+
+<h2>4. Anomalias identificadas</h2>
+<div class="anom">
+  <strong>Fretes de emergência crescem todo trimestre, não é evento pontual</strong>
+  <p>O realizado de frete saiu de R$ 680 mil no T1 para R$ 1,22 mi no T4, enquanto o orçamento ficou em torno de 6% da receita líquida. O frete realizado foi de 7,7% para 11,4% da receita líquida no ano. O desvio acumulado no ano é de R$ 1,36 mi.</p>
+</div>
+<div class="anom">
+  <strong>Cancelamentos por atraso logístico mais que dobram ao longo do ano</strong>
+  <p>Cancelamentos e devoluções saíram de R$ 195 mil (T1) para R$ 420 mil (T4), contra orçamento de R$ 120 mil a R$ 160 mil por trimestre. Sinal direto do atraso no ciclo de faturamento e expedição.</p>
+</div>
+<div class="anom">
+  <strong>Reentregas e multas por divergência de pedido sobem 2,4 vezes do T1 ao T4</strong>
+  <p>De R$ 110 mil para R$ 260 mil. O orçamento previa R$ 45 mil a R$ 60 mil. A causa mapeada é a transposição manual de dados da proposta para a ordem de expedição.</p>
+</div>
+<div class="anom mid">
+  <strong>Provisão para devedores duvidosos mais que dobra e supera o orçamento em 3 vezes no T4</strong>
+  <p>PDD saiu de R$ 160 mil para R$ 390 mil, contra orçamento de R$ 95 mil a R$ 125 mil. A cobrança é feita por e-mail, sem régua automatizada.</p>
+</div>
+<div class="anom mid">
+  <strong>Margem bruta cai 3 p.p. entre o primeiro e o segundo semestre</strong>
+  <p>A margem bruta ficou em 48,7% e 49,1% no T1 e no T2, e caiu para 46,0% e 45,5% no T3 e no T4. O CMV cresceu mais do que a receita nos dois últimos trimestres (matéria-prima acima do orçado em todos os trimestres).</p>
+</div>
+<div class="anom info">
+  <strong>Inconsistência entre abas: receita por linha de produto</strong>
+  <p>A aba de linhas de produto soma R$ 47,4 mi realizados, enquanto a DRE mostra R$ 48,5 mi de receita bruta. A diferença precisa ser explicada antes de apresentar os números à diretoria.</p>
+</div>
+<div class="anom info">
+  <strong>Inconsistência entre abas: impacto de fretes</strong>
+  <p>A aba de gargalos cita R$ 960 mil por ano em fretes duplicados. O desvio combinado de frete e reentregas na DRE é de cerca de R$ 1,9 mi. Os números têm escopos diferentes e devem ser apresentados com essa distinção.</p>
+</div>
+<div class="anom info">
+  <strong>Verificação de consistência: IRPJ e CSLL</strong>
+  <p>Sem anomalia. A alíquota efetiva realizada fica em 34% em todos os trimestres, coerente com a regra de tributação sobre o lucro antes de impostos. A queda do IR acompanha a queda do lucro.</p>
+</div>
+
+<h2>5. Projeção do próximo trimestre (T1 do ano seguinte)</h2>
+<div class="card">
+  <h3>Método</h3>
+  <p style="font-size:14px;margin:0 0 8px">Regressão linear simples sobre os quatro trimestres realizados, linha a linha. Cada linha é extrapolada um trimestre à frente, e o EBITDA é recalculado a partir das projeções das linhas. Não há ajuste de sazonalidade, porque a planilha tem apenas um ano de dados.</p>
+  <ul class="premissas">
+    <li>Receita líquida projetada: <strong>R$ 11,3 mi</strong> (tendência de +R$ 0,6 mi por trimestre).</li>
+    <li>Lucro bruto projetado: <strong>R$ 5,0 mi</strong>, com margem de cerca de 44,5%.</li>
+    <li>Fretes projetados: <strong>R$ 1,41 mi</strong>. Reentregas: <strong>R$ 0,31 mi</strong>. PDD: <strong>R$ 0,48 mi</strong>.</li>
+    <li>Cancelamentos projetados: <strong>R$ 0,51 mi</strong>, já descontados da receita líquida.</li>
+    <li>Premissa: nenhuma iniciativa de IA entra em vigor no período. Essa é a projeção de inércia.</li>
+  </ul>
+</div>
+
+<div class="scen" style="margin-top:12px">
+  <div class="kpi">
+    <div class="label">Cenário A: inércia (tendência linear)</div>
+    <div class="value bad">R$ 0,7 mi</div>
+    <div class="delta">EBITDA projetado, margem de cerca de 6%</div>
+  </div>
+  <div class="kpi">
+    <div class="label">Cenário B: estabilização no nível do T4</div>
+    <div class="value warn">R$ 1,0 mi</div>
+    <div class="delta">Sem piora, sem melhora nos custos extras</div>
+  </div>
+  <div class="kpi">
+    <div class="label">Cenário C: iniciativas com captura de 40%</div>
+    <div class="value ok">R$ 1,2 mi</div>
+    <div class="delta">Frete, reentregas, PDD e cancelamentos voltam em 40% do caminho para o nível do T2</div>
+  </div>
+</div>
+<p class="note">Cenário C: a captura de 40% representa implantação parcial no primeiro trimestre, com a alçada de crédito já em operação e a leitura de propostas ainda em piloto. Os ganhos potenciais totais, com captura de 100%, somariam cerca de R$ 1,3 mi por trimestre ao cenário A.</p>
+
+<h2>6. Premissas que mudam a projeção</h2>
+<div class="card">
+  <ul class="premissas">
+    <li>Se o frete continuar subindo na taxa do ano, a projeção de EBITDA cai abaixo de R$ 0,7 mi. A taxa de frete é a sensibilidade mais forte do modelo.</li>
+    <li>Se a receita líquida ficar no nível do T4 (R$ 10,7 mi), e não na tendência de R$ 11,3 mi, o EBITDA projetado cai cerca de R$ 0,2 mi.</li>
+    <li>Sazonalidade não foi modelada. Se o primeiro trimestre historicamente for mais fraco no setor, o cenário A pode ser ainda pior.</li>
+    <li>A projeção não considera efeito de preço ou reajuste de tabela, nem mudança no mix de produtos.</li>
+  </ul>
+</div>
+
+<footer>
+  Taranis Black | Rota 4: IA para Finanças e Operações | Dados simulados do Challenge ONE G11
+</footer>
+
+</main>
+
+<script>
+const T = ['T1','T2','T3','T4'];
+const orc = {
+  recLiq: [8761,9332,10391,11294], ebitda: [2111,2247,2601,2889],
+  lucroBruto: [4311,4582,5161,5644]
+};
+const real = {
+  recLiq: [8810.5,9512.5,9995,10702], ebitda: [1780.5,1832.5,1155,1002],
+  lucroBruto: [4290.5,4672.5,4595,4872],
+  frete: [680,790,1050,1220], reent: [110,145,210,260],
+  pdd: [160,220,340,390], canc: [195,240,380,420]
+};
+
+const fmt = v => v.toLocaleString('pt-BR', {minimumFractionDigits:0, maximumFractionDigits:0});
+
+// Tabela DRE
+const rows = [
+  ['Receita líquida', [8761,9332,10391,11294], [8810.5,9512.5,9995,10702], 39778, 39020],
+  ['Lucro bruto', [4311,4582,5161,5644], [4290.5,4672.5,4595,4872], 19698, 18430],
+  ['Fretes e logística CD', [-520,-560,-620,-680], [-680,-790,-1050,-1220], -2380, -3740],
+  ['Reentregas e multas', [-45,-50,-55,-60], [-110,-145,-210,-260], -210, -725],
+  ['PDD (inadimplência)', [-95,-105,-115,-125], [-160,-220,-340,-390], -440, -1110],
+  ['Cancelamentos (receita)', [-120,-130,-150,-160], [-195,-240,-380,-420], -560, -1235],
+  ['EBITDA', [2111,2247,2601,2889], [1780.5,1832.5,1155,1002], 9848, 5770],
+];
+const tb = document.getElementById('dreBody');
+tb.innerHTML = rows.map(([name,o,r,ao,ar]) => {
+  const cells = [];
+  o.forEach((ov,i)=>{ cells.push(`<td>${fmt(ov)}</td>`); cells.push(`<td>${fmt(r[i])}</td>`); });
+  const varAno = ((ar-ao)/Math.abs(ao)*100);
+  const cls = varAno>=0 ? 'pos' : 'neg';
+  return `<tr><td>${name}</td>${cells.join('')}<td>${fmt(ao)}</td><td>${fmt(ar)}</td><td class="${cls}">${varAno.toFixed(1)}%</td></tr>`;
+}).join('');
+
+// Gráficos
+const base = {responsive:true, maintainAspectRatio:false,
+  plugins:{legend:{position:'bottom'}}, scales:{y:{beginAtZero:true}}};
+
+new Chart(document.getElementById('chReceita'), {type:'bar', data:{labels:T,
+  datasets:[{label:'Orçado', data:orc.recLiq.map(v=>v/1000), backgroundColor:'#c7d2e0'},
+            {label:'Realizado', data:real.recLiq.map(v=>v/1000), backgroundColor:'#1e3a5f'}]},
+  options:{...base, scales:{y:{beginAtZero:true, title:{display:true,text:'R$ mi'}}}}});
+
+new Chart(document.getElementById('chEbitda'), {type:'line', data:{labels:T,
+  datasets:[{label:'Orçado', data:orc.ebitda.map(v=>v/1000), borderColor:'#7c9cc4', borderDash:[6,4], tension:.3},
+            {label:'Realizado', data:real.ebitda.map(v=>v/1000), borderColor:'#b91c1c', tension:.3}]},
+  options:{...base, scales:{y:{beginAtZero:true, title:{display:true,text:'R$ mi'}}}}});
+
+new Chart(document.getElementById('chCustos'), {type:'bar', data:{labels:T,
+  datasets:[
+    {label:'Fretes', data:real.frete.map(v=>v/1000), backgroundColor:'#1e3a5f'},
+    {label:'Reentregas', data:real.reent.map(v=>v/1000), backgroundColor:'#7c9cc4'},
+    {label:'PDD', data:real.pdd.map(v=>v/1000), backgroundColor:'#b45309'},
+    {label:'Cancelamentos', data:real.canc.map(v=>v/1000), backgroundColor:'#b91c1c'}]},
+  options:{...base, scales:{x:{stacked:true}, y:{stacked:true, beginAtZero:true, title:{display:true,text:'R$ mi'}}}}});
+
+new Chart(document.getElementById('chMargem'), {type:'line', data:{labels:T,
+  datasets:[
+    {label:'Margem bruta %', data:real.lucroBruto.map((v,i)=>+(v/real.recLiq[i]*100).toFixed(1)), borderColor:'#1e3a5f', tension:.3},
+    {label:'Margem EBITDA %', data:real.ebitda.map((v,i)=>+(v/real.recLiq[i]*100).toFixed(1)), borderColor:'#b91c1c', tension:.3}]},
+  options:{...base, scales:{y:{beginAtZero:true, title:{display:true,text:'%'}}}}});
+</script>
+</body>
+</html>
